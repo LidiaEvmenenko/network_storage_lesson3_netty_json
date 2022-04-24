@@ -9,14 +9,17 @@ import ru.gb.storage.commons.message.Message;
 
 import java.util.List;
 
-public class JsonDecoder extends MessageToMessageDecoder<ByteBuf> {
+public class JsonDecoder extends MessageToMessageDecoder<String> {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
-        final byte[] bytes = ByteBufUtil.getBytes(msg);
-        Message message = OBJECT_MAPPER.readValue(bytes, Message.class);
-        out.add(message);
+    protected void decode(ChannelHandlerContext ctx, String s, List<Object> out) throws Exception {
+        //final byte[] bytes = ByteBufUtil.getBytes(msg);
+        //Message message = OBJECT_MAPPER.readValue(bytes, Message.class);
+        //out.add(message);
+        System.out.println("JsonDecoder from String: "+ s);
+        Message msg = OBJECT_MAPPER.readValue(s,Message.class);
+        ctx.fireChannelRead(msg);
     }
 }
 
