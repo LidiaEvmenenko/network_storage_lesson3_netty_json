@@ -17,7 +17,7 @@ public class JsonDecoder extends MessageToMessageDecoder<String> {
         //final byte[] bytes = ByteBufUtil.getBytes(msg);
         //Message message = OBJECT_MAPPER.readValue(bytes, Message.class);
         //out.add(message);
-        System.out.println("JsonDecoder from String: "+ s);
+        //System.out.println("JsonDecoder from String: "+ s);
         Message msg = OBJECT_MAPPER.readValue(s,Message.class);
         ctx.fireChannelRead(msg);
     }

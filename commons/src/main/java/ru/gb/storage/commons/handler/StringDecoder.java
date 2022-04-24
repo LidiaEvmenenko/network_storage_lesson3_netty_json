@@ -14,7 +14,7 @@ public class StringDecoder extends MessageToMessageDecoder<ByteBuf> {
     protected void decode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
         byte[] bytes = ByteBufUtil.getBytes(msg);
         String s = new String(bytes);
-        System.out.println("StringDecoder " + Arrays.toString(bytes));
+       // System.out.println("StringDecoder " + Arrays.toString(bytes));
         ctx.fireChannelRead(s);
     }
 }

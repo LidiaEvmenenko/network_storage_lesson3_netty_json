@@ -15,7 +15,7 @@ public class JsonEncoder extends MessageToMessageEncoder<Message> {
         //byte[] value = OBJECT_MAPPER.writeValueAsBytes(msg);
         //out.add(ctx.alloc().buffer().writeBytes(value));
         String value = OBJECT_MAPPER.writeValueAsString(msg);
-        System.out.println("JsonEncoder into String:"+ value);
+        //System.out.println("JsonEncoder into String:"+ value);
         ctx.writeAndFlush(value);
     }
 }

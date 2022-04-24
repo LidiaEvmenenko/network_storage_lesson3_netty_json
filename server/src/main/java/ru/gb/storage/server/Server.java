@@ -12,9 +12,20 @@ import ru.gb.storage.commons.handler.JsonEncoder;
 import ru.gb.storage.commons.handler.StringDecoder;
 import ru.gb.storage.commons.handler.StringEncoder;
 import ru.gb.storage.commons.message.AuthMessage;
+import ru.gb.storage.commons.message.FileContentMessage;
+import ru.gb.storage.commons.message.FileRequestMessage;
+import ru.gb.storage.commons.message.Message;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class Server implements Runnable{
     private int port;
+    private String username;
 
     public static void main(String[] args) {
         new Server(9000);
@@ -43,12 +54,27 @@ public class Server implements Runnable{
                                     new StringEncoder(),
                                     new JsonDecoder(),
                                     new JsonEncoder(),
-                                    new ChannelInboundHandlerAdapter(){
+                                    new SimpleChannelInboundHandler<Object>(){
                                         @Override
-                                        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+                                        public void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
                                             if (msg instanceof AuthMessage){
                                                 System.out.println("login "+((AuthMessage) msg).getLogin()+
                                                         " password "+((AuthMessage) msg).getPassword());
+                                                AuthMessage message = (AuthMessage) msg;
+                                                username = message.getLogin();
+
+                                                Path path = Paths.get( ".", "server_repository", message.getLogin());
+                                                if (!Files.exists(path)){
+                                                    Files.createDirectory(path);
+                                                }
+                                            }
+                                            if (msg instanceof FileContentMessage) {
+                                                taskFileContentMessage((Message) msg);
+                                            }
+                                            if (msg instanceof FileRequestMessage) {
+                                                System.out.println("Пришло сообщение");
+                                                taskFileRequestMessage(ctx, msg);
+
                                             }
                                         }
                                     });//ServerInputHandler());
@@ -67,6 +93,53 @@ public class Server implements Runnable{
             bossGroup.shutdownGracefully();
             workGroup.shutdownGracefully();
         }
-
     }
+
+    private void taskFileContentMessage(Message msg){
+        FileContentMessage fcm =(FileContentMessage) msg;
+        try {
+            Path path = Paths.get(".","server_repository", username, fcm.getFileName());
+            System.out.print("Получен файл: ");
+            System.out.println(path);
+            RandomAccessFile accessFile = new RandomAccessFile(String.valueOf(path),"rw");
+            accessFile.seek(fcm.getStartPosition());
+            accessFile.write(fcm.getContent());
+            if (fcm.isLast()){
+                accessFile.close();
+            }
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    private void taskFileRequestMessage(ChannelHandlerContext ctx, Object msg){
+        FileRequestMessage frm = (FileRequestMessage) msg;
+        Path path = Paths.get(".", "server_repository", username, frm.getPath());
+        System.out.print("Передается файл: ");
+        System.out.println(path);
+        File file = new File(String.valueOf(path));
+        try {
+            RandomAccessFile accessFile = new RandomAccessFile(file, "r");
+            while (accessFile.getFilePointer() != accessFile.length()) {
+                byte[] fileContent;
+                long avaible = accessFile.length() - accessFile.getFilePointer();
+                if (avaible > 64 * 1024) {
+                    fileContent = new byte[64 * 1024];
+                } else {
+                    fileContent = new byte[(int) avaible];
+                }
+                FileContentMessage message = new FileContentMessage();
+                message.setStartPosition(accessFile.getFilePointer());
+                accessFile.read(fileContent);
+                message.setFileName(frm.getPath());
+                message.setContent(fileContent);
+                message.setLast(accessFile.getFilePointer() == accessFile.length());
+                ctx.writeAndFlush(message);
+            }
+            accessFile.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }
