@@ -9,6 +9,9 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import ru.gb.storage.commons.handler.JsonDecoder;
 import ru.gb.storage.commons.handler.JsonEncoder;
+import ru.gb.storage.commons.handler.StringDecoder;
+import ru.gb.storage.commons.handler.StringEncoder;
+import ru.gb.storage.commons.message.AuthMessage;
 
 public class Server implements Runnable{
     private int port;
@@ -36,14 +39,18 @@ public class Server implements Runnable{
                             ch.pipeline().addLast(
                                     new LengthFieldBasedFrameDecoder(1024*1024,0,3,0,3),
                                     new LengthFieldPrepender(3),
+                                    new StringDecoder(),
+                                    new StringEncoder(),
                                     new JsonDecoder(),
                                     new JsonEncoder(),
                                     new ChannelInboundHandlerAdapter(){
                                         @Override
                                         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-
+                                            if (msg instanceof AuthMessage){
+                                                System.out.println("login "+((AuthMessage) msg).getLogin()+
+                                                        " password "+((AuthMessage) msg).getPassword());
+                                            }
                                         }
-
                                     });//ServerInputHandler());
                         }
                     })

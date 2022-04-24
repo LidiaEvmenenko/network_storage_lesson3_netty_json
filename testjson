@@ -1,0 +1,7 @@
+{
+  "text": "something"
+  "type": "textMessage",
+  "subMessage": {
+    "text": "test"
+  }
+}
